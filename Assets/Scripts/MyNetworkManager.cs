@@ -106,6 +106,81 @@ public class MyNetworkManager : MonoBehaviour
         currState = Initializing;       
     }
 
+    // When receives a new tracking message
+    void OnTracking(NetworkMessage netMsg)
+    {
+        TrackingMessage trackMsg = netMsg.ReadMessage<TrackingMessage>();
+        collectControllerData(trackMsg);
+
+        if (currState == Initializing)
+        {
+            Debug.Log("Initializing...");
+            // the first grip message seen is the right controller.
+            if (trackMsg.grip)
+            {
+                // right controller hasn't been seen yet, so this id represents the right controller.
+                if (controllerIDs[0] < 0)
+                {
+                    controllerIDs[0] = trackMsg.id;
+                } else if (controllerIDs[1] < 0) // right controller was already captured, but left wasn't.
+                {
+                    controllerIDs[1] = trackMsg.id;
+                    // both controller IDs have now been captured.
+                    Debug.Log("Right controller ID: " + controllerIDs[0] + ", left controller ID: " + controllerIDs[1]);
+                    Debug.Log("Continuing to calibration mode...");
+                    currState = Calibrating;
+                    return;
+                } 
+            }
+        }
+
+
+        if (currState == Calibrating)
+        {
+            //Debug.Log("Calibrating...");
+            _controllerTrackerRight.transform.position = _currPositionRight;
+            _controllerTrackerLeft.transform.position = _currPositionLeft;
+            handleCalibration();
+            _currGripRight = false;
+            return;
+        }
+
+        if (currState == Tracking)
+        {
+            Debug.Log("Tracking");
+            // show current controller location.
+            _controllerTrackerRight.transform.position = calibratedPos(_currPositionRight);
+            _controllerTrackerLeft.transform.position = calibratedPos(_currPositionLeft);
+            return;
+        }
+    }
+
+    void collectControllerData(TrackingMessage trackMsg)
+    {
+        if (trackMsg.id == controllerIDs[0])
+        {
+            _currTriggerRight = trackMsg.trigger;
+            _currPositionRight = trackMsg.position;
+            _currGripRight = trackMsg.grip;
+            _currTouchpadRight = trackMsg.touchPad;
+            _currPadClickedRight = trackMsg.padClicked;
+            _currPadTouchedRight = trackMsg.padTouched;
+            //Debug.Log("Right, pos: " + _currPositionRight + ", trig: " + _currTriggerRight + ", pad: " + _currPadTouchedRight);
+        }
+
+        if (trackMsg.id == controllerIDs[1])
+        {
+            _currTriggerLeft = trackMsg.trigger;
+            _currPositionLeft = trackMsg.position;
+            _currGripLeft = trackMsg.grip;
+            _currTouchpadLeft = trackMsg.touchPad;
+            _currPadClickedLeft = trackMsg.padClicked;
+            _currPadTouchedLeft = trackMsg.padTouched;
+            //Debug.Log("Left, pos: " + _currPositionLeft + ", trig: " + _currTriggerLeft + ", pad: " + _currPadTouchedLeft);
+        }
+
+    }
+
     void handleCalibration()
     {
         if (_currGripRight)
@@ -128,7 +203,7 @@ public class MyNetworkManager : MonoBehaviour
                 _currStage += 1;
                 return;
             }
-            
+
             if (_currStage == 2)
             {
                 Debug.Log("stage 2 of calibration");
@@ -149,79 +224,6 @@ public class MyNetworkManager : MonoBehaviour
                 Debug.Log("now in editing mode...");
                 return;
             }
-        }
-    }
-
-    // When receives a new tracking message
-    void OnTracking(NetworkMessage netMsg)
-    {
-        TrackingMessage trackMsg = netMsg.ReadMessage<TrackingMessage>();
-        Debug.Log("currIDs: " + controllerIDs[0] + controllerIDs[1]);
-
-        if (currState == Initializing)
-        {
-            Debug.Log("Initializing...");
-            // the first grip message seen is the right controller.
-            if (trackMsg.grip)
-            {
-                // right controller hasn't been seen yet, so this id represents the right controller.
-                if (controllerIDs[0] < 0)
-                {
-                    controllerIDs[0] = trackMsg.id;
-                } else if (controllerIDs[1] < 0) // right controller was already captured, but left wasn't.
-                {
-                    controllerIDs[1] = trackMsg.id;
-                } else
-                {
-                    // both controller IDs have been captured.
-                    Debug.Log("Right controller ID: " + controllerIDs[0] + ", left controller ID: " + controllerIDs[1]);
-                    Debug.Log("Continuing to calibration mode...");
-                    currState = Calibrating;
-                    return;
-                }
-            }
-        }
-
-        if (trackMsg.id == 1)
-        {
-            _currTriggerRight = trackMsg.trigger;
-            _currPositionRight = trackMsg.position;
-            _currGripRight = trackMsg.grip;
-            _currTouchpadRight = trackMsg.touchPad;
-            _currPadClickedRight = trackMsg.padClicked;
-            _currPadTouchedRight = trackMsg.padTouched;
-            Debug.Log("Right, pos: " + _currPositionRight + ", trig: " + _currTriggerRight + ", pad: " + _currPadTouchedRight);
-        }
-
-        if (trackMsg.id == 2)
-        {
-            _currTriggerLeft = trackMsg.trigger;
-            _currPositionLeft = trackMsg.position;
-            _currGripLeft = trackMsg.grip;
-            _currTouchpadLeft = trackMsg.touchPad;
-            _currPadClickedLeft = trackMsg.padClicked;
-            _currPadTouchedLeft = trackMsg.padTouched;
-            Debug.Log("Left, pos: " + _currPositionLeft + ", trig: " + _currTriggerLeft + ", pad: " + _currPadTouchedLeft);
-        }
-
-
-        if (currState == Calibrating)
-        {
-            //Debug.Log("Calibrating...");
-            _controllerTrackerRight.transform.position = _currPositionRight;
-            _controllerTrackerLeft.transform.position = _currPositionLeft;
-            handleCalibration();
-            // slightly sketchy since grip wasn't working quite right during calibration step - prob a threading problem and/or a network latency issue.
-            _currGripLeft = false;
-            _currGripRight = false;
-        }
-
-        if (currState == Tracking)
-        {
-            Debug.Log("Tracking");
-            // show current controller location.
-            _controllerTrackerRight.transform.position = calibratedPos(_currPositionRight);
-            _controllerTrackerLeft.transform.position = calibratedPos(_currPositionLeft);
         }
     }
 

@@ -448,9 +448,6 @@ MonoBehaviour:
   calibrated: 1
   _anchor: {fileID: 492708692}
   _camera: {fileID: 1673428687}
-  _choreographyManager: {fileID: 0}
-  waypointPrefab: {fileID: 4107741989494220, guid: 49ecbc51ff1f3fb459cc54be1a1f02fb,
-    type: 2}
   _controllerTrackerRight: {fileID: 109710528}
   _controllerTrackerLeft: {fileID: 1822045867}
   camera_speed: 1
