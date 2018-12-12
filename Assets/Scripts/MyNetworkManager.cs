@@ -16,12 +16,15 @@ public class MyNetworkManager : MonoBehaviour
 
     NetworkClient myClient;
 
-    const short NotConnected = 1000;
-    const short Initializing = NotConnected + 1;
-    const short Calibrating = Initializing + 1;
-    const short Tracking = Calibrating + 1;
-    const short Connecting = Tracking + 1;
+    public const short NotConnected = 1000;
+    public const short Initializing = NotConnected + 1;
+    public const short Calibrating = Initializing + 1;
+    public const short Tracking = Calibrating + 1;
+    public const short Connecting = Tracking + 1;
     short currState = NotConnected;
+
+    // initialize the controller ID array to -1
+    private int[] controllerIDs = new int[]{ -1, -1 };
 
     private bool _currTriggerRight;
     private bool _currGripRight;
@@ -100,7 +103,7 @@ public class MyNetworkManager : MonoBehaviour
     {
         Debug.Log("Connected to server");
         _anchor.transform.position = new Vector3(0f, 0f, 0f);
-        currState = Calibrating;       
+        currState = Initializing;       
     }
 
     void handleCalibration()
@@ -153,6 +156,31 @@ public class MyNetworkManager : MonoBehaviour
     void OnTracking(NetworkMessage netMsg)
     {
         TrackingMessage trackMsg = netMsg.ReadMessage<TrackingMessage>();
+        Debug.Log("currIDs: " + controllerIDs[0] + controllerIDs[1]);
+
+        if (currState == Initializing)
+        {
+            Debug.Log("Initializing...");
+            // the first grip message seen is the right controller.
+            if (trackMsg.grip)
+            {
+                // right controller hasn't been seen yet, so this id represents the right controller.
+                if (controllerIDs[0] < 0)
+                {
+                    controllerIDs[0] = trackMsg.id;
+                } else if (controllerIDs[1] < 0) // right controller was already captured, but left wasn't.
+                {
+                    controllerIDs[1] = trackMsg.id;
+                } else
+                {
+                    // both controller IDs have been captured.
+                    Debug.Log("Right controller ID: " + controllerIDs[0] + ", left controller ID: " + controllerIDs[1]);
+                    Debug.Log("Continuing to calibration mode...");
+                    currState = Calibrating;
+                    return;
+                }
+            }
+        }
 
         if (trackMsg.id == 1)
         {
