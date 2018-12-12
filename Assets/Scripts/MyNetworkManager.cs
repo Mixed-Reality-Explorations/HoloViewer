@@ -17,15 +17,11 @@ public class MyNetworkManager : MonoBehaviour
     NetworkClient myClient;
 
     const short NotConnected = 1000;
-    const short Tracking = NotConnected + 1;
-    const short Calibrating = Tracking + 1;
-    const short Editing = Calibrating + 1;
-    const short Connecting = Editing + 1;
-    const short Gesture = Connecting + 1;
-    const short Replay = Gesture + 1;
-    const short Menu = Replay + 1;
+    const short Initializing = NotConnected + 1;
+    const short Calibrating = Initializing + 1;
+    const short Tracking = Calibrating + 1;
+    const short Connecting = Tracking + 1;
     short currState = NotConnected;
-   
 
     private bool _currTriggerRight;
     private bool _currGripRight;
@@ -96,7 +92,6 @@ public class MyNetworkManager : MonoBehaviour
         myClient = new NetworkClient();
         myClient.RegisterHandler(MsgType.Connect, OnConnected);
         myClient.RegisterHandler(Tracking, OnTracking);
-        myClient.RegisterHandler(Gesture, OnGesture);
         myClient.Connect(serverIP, 4444);
     }
 
@@ -147,7 +142,7 @@ public class MyNetworkManager : MonoBehaviour
                 GameObject dirIndicator = GameObject.Find("HeadsUpDirectionIndicator");
                 Destroy(dirIndicator);
                 Destroy(_anchor);
-                currState = Editing;
+                currState = Tracking;
                 Debug.Log("now in editing mode...");
                 return;
             }
